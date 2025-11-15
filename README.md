@@ -1,5 +1,8 @@
 # 🕹️ HTML5 Pong Generator --- Multi-Agent Workflow
 
+![Total Views](https://views.whatilearened.today/views/github/pmoschos/game-creator.svg)![Python](https://img.shields.io/badge/language-Python-blue.svg) ![GitHub last commit](https://img.shields.io/github/last-commit/pmoschos/game-creator) ![License](https://img.shields.io/badge/license-MIT-green.svg)
+
+
 This repository contains a **multi-agent automated system** that
 generates, validates, and exports a fully-playable **HTML5 Pong game**
 using a custom AI workflow based on the `phi` framework.\
