@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Pong Game</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body, html { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; background-color: #222; color: white; text-align: center; }
+        canvas { background-color: #444; display: block; margin: 20px 0; border: 2px solid white; }
+        button, select { margin: 10px; padding: 10px; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <h1>Pong Game</h1>
+    <canvas id="pongCanvas" width="900" height="600"></canvas>
+    <div>
+        <button id="resetButton">Reset</button>
+        <label for="speedLevel">Speed Level:</label>
+        <select id="speedLevel">
+            <option value="0.5">Easy</option>
+            <option value="1">Medium</option>
+            <option value="1.5">Hard</option>
+        </select>
+    </div>
+    <p><strong>Instructions:</strong> Press <em>SPACE</em> to start the game. Use <em>W</em>/<em>S</em> keys to move your paddle up and down. The first to 10 points wins!</p>
+    <p id="scoreHUD">Score: Player 0 - 0 CPU</p>
+
+    <script>
+    const canvas = document.getElementById('pongCanvas');
+    const context = canvas.getContext('2d');
+
+    let playerScore = 0;
+    let aiScore = 0;
+    let ballSpeedLevel = 1; // Default is Medium
+    let spacePressed = false;
+
+    const paddleWidth = 15, paddleHeight = 100;
+
+    const player = {
+        x: 0,
+        y: canvas.height / 2 - paddleHeight / 2,
+        width: paddleWidth,
+        height: paddleHeight,
+        dy: 0,
+        speed: 6,
+    };
+
+    const ai = {
+        x: canvas.width - paddleWidth,
+        y: canvas.height / 2 - paddleHeight / 2,
+        width: paddleWidth,
+        height: paddleHeight,
+        dy: 0,
+        speed: 6,
+    };
+
+    const ball = {
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        radius: 8,
+        speed: 5 * ballSpeedLevel,
+        dx: 5 * ballSpeedLevel,
+        dy: -5 * ballSpeedLevel,
+    };
+
+    function drawRect(x, y, w, h, color) {
+        context.fillStyle = color;
+        context.fillRect(x, y, w, h);
+    }
+
+    function drawBall(x, y, radius, color) {
+        context.fillStyle = color;
+        context.beginPath();
+        context.arc(x, y, radius, 0, Math.PI * 2);
+        context.closePath();
+        context.fill();
+    }
+
+    function drawText(text, x, y, color) {
+        context.fillStyle = color;
+        context.font = "32px Arial";
+        context.fillText(text, x, y);
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') spacePressed = true;
+        if (e.code === 'KeyW') player.dy = -player.speed;
+        if (e.code === 'KeyS') player.dy = player.speed;
+    });
+
+    document.addEventListener('keyup', (e) => {
+        if (e.code === 'KeyW' || e.code === 'KeyS') player.dy = 0;
+    });
+
+    document.getElementById('resetButton').onclick = resetGame;
+
+    document.getElementById('speedLevel').onchange = function() {
+        const value = this.value;
+        ballSpeedLevel = parseFloat(value);
+        resetGame();
+    };
+
+    function resetGame() {
+        playerScore = 0;
+        aiScore = 0;
+        updateScoreHUD();
+        player.y = canvas.height / 2 - paddleHeight / 2;
+        ai.y = canvas.height / 2 - paddleHeight / 2;
+        ball.x = canvas.width / 2;
+        ball.y = canvas.height / 2;
+        ball.speed = 5 * ballSpeedLevel;
+        ball.dx = ball.speed;
+        ball.dy = -ball.speed;
+        spacePressed = false;
+    }
+
+    function updateScoreHUD() {
+        document.getElementById('scoreHUD').textContent = `Score: Player ${playerScore} - ${aiScore} CPU`;
+    }
+
+    function aiMovement() {
+        const centerY = ai.y + paddleHeight / 2;
+        if (ball.y < centerY) ai.dy = -ai.speed * 0.7 * ballSpeedLevel;
+        else if (ball.y > centerY) ai.dy = ai.speed * 0.7 * ballSpeedLevel;
+        else ai.dy = 0;
+
+        if (spacePressed) ai.y += ai.dy;
+    }
+
+    function ballCollision() {
+        if (ball.y + ball.radius >= canvas.height || ball.y - ball.radius <= 0) {
+            ball.dy *= -1;
+        }
+
+        let playerOrAI = (ball.x < canvas.width / 2) ? player : ai;
+
+        if (ball.x - ball.radius < playerOrAI.x + playerOrAI.width &&
+            ball.x + ball.radius > playerOrAI.x &&
+            ball.y + ball.radius > playerOrAI.y &&
+            ball.y - ball.radius < playerOrAI.y + playerOrAI.height) {
+            ball.dx *= -1.1;
+            ball.speed *= 1.05;
+
+            let collidePoint = (ball.y - (playerOrAI.y + playerOrAI.height / 2)) / (playerOrAI.height / 2);
+            let angleRad = (Math.PI / 4) * collidePoint;
+            let direction = (ball.x < canvas.width / 2) ? 1 : -1;
+
+            ball.dx = direction * ball.speed * Math.cos(angleRad);
+            ball.dy = ball.speed * Math.sin(angleRad);
+        }
+
+        if (ball.x + ball.radius < 0) {
+            aiScore += 1;
+            if (aiScore === 10) {
+                alert("Game Over! You lost. Try again?");
+                resetGame();
+            } else {
+                resetBall();
+            }
+        }
+        if (ball.x - ball.radius > canvas.width) {
+            playerScore += 1;
+            if (playerScore === 10) {
+                alert("Congratulations! You won! Play again?");
+                resetGame();
+            } else {
+                resetBall();
+            }
+        }
+    }
+
+    function resetBall() {
+        ball.x = canvas.width / 2;
+        ball.y = canvas.height / 2;
+        ball.dx = 5 * ballSpeedLevel * (Math.random() > 0.5 ? 1 : -1);
+        ball.dy = 5 * ballSpeedLevel * (Math.random() > 0.5 ? 1 : -1);
+    }
+
+    function update() {
+        if (!spacePressed) return;
+
+        player.y += player.dy;
+        aiMovement();
+
+        player.y = Math.max(Math.min(player.y, canvas.height - player.height), 0);
+        ai.y = Math.max(Math.min(ai.y, canvas.height - ai.height), 0);
+
+        ball.x += ball.dx;
+        ball.y += ball.dy;
+
+        ballCollision();
+    }
+
+    function render() {
+        drawRect(0, 0, canvas.width, canvas.height, '#444');
+        drawRect(player.x, player.y, player.width, player.height, 'white');
+        drawRect(ai.x, ai.y, ai.width, ai.height, 'white');
+        drawBall(ball.x, ball.y, ball.radius, 'white');
+        drawText(playerScore, canvas.width / 4, canvas.height / 10, 'white');
+        drawText(aiScore, 3 * canvas.width / 4, canvas.height / 10, 'white');
+    }
+
+    function gameLoop() {
+        update();
+        render();
+        requestAnimationFrame(gameLoop);
+    }
+    
+    resetGame();
+    gameLoop();
+    </script>
+</body>
+</html>
